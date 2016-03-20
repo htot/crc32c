@@ -37,6 +37,7 @@ static const CRC32CFunctionInfo FNINFO[] = {
     MAKE_FN_STRUCT(crc32cHardware32),
 #ifdef __LP64__
     MAKE_FN_STRUCT(crc32cHardware64),
+    MAKE_FN_STRUCT(crc32cAdler),
 #endif
 };
 #undef MAKE_FN_STRUCT
@@ -46,7 +47,8 @@ static size_t numValidFunctions() {
     bool hasHardware = (detectBestCRC32C() != crc32cSlicingBy8);
     if (!hasHardware) {
         while (FNINFO[numFunctions-1].crcfn == crc32cHardware32 ||
-                FNINFO[numFunctions-1].crcfn == crc32cHardware64) {
+                FNINFO[numFunctions-1].crcfn == crc32cHardware64 ||
+                FNINFO[numFunctions-1].crcfn == crc32cAdler) {
             numFunctions -= 1;
         }
     }
