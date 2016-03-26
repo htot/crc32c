@@ -166,17 +166,41 @@ static void crc32c_init_hw(void)
     crc32c_zeros(crc32c_short, SHORT);
 }
 
+#ifndef __LP64__
+#define CRCtriplet(crc, buf, size, i) \
+    crc ## 0 = __builtin_ia32_crc32si(crc ## 0, *(uint32_t*) (buf + i)); \
+    crc ## 1 = __builtin_ia32_crc32si(crc ## 1, *(uint32_t*) (buf + i + size)); \
+    crc ## 2 = __builtin_ia32_crc32si(crc ## 2, *(uint32_t*) (buf + i + 2 * size)); \
+    crc ## 0 = __builtin_ia32_crc32si(crc ## 0, *(uint32_t*) (buf + 1 + i)); \
+    crc ## 1 = __builtin_ia32_crc32si(crc ## 1, *(uint32_t*) (buf + 1 + i + size)); \
+    crc ## 2 = __builtin_ia32_crc32si(crc ## 2, *(uint32_t*) (buf + 1 + i + 2 * size));
+#else
 #define CRCtriplet(crc, buf, size, i) \
     crc ## 0 = __builtin_ia32_crc32di(crc ## 0, *(uint64_t*) (buf + i)); \
     crc ## 1 = __builtin_ia32_crc32di(crc ## 1, *(uint64_t*) (buf + i + size)); \
-    crc ## 2 = __builtin_ia32_crc32di(crc ## 2, *(uint64_t*) (buf + i + 2 * size)); \
+    crc ## 2 = __builtin_ia32_crc32di(crc ## 2, *(uint64_t*) (buf + i + 2 * size));
+#endif
 
+
+#ifndef __LP64__
+#define CRCsinglet(crc, buf) \
+    crc = __builtin_ia32_crc32si(crc, *(uint32_t*)buf); \
+    crc = __builtin_ia32_crc32si(crc, *(uint32_t*)(buf + 1)); \
+    buf+= 2 *sizeof(uint32_t);
+#else
+#define CRCsinglet(crc, buf) crc = __builtin_ia32_crc32di(crc, *(uint64_t*)buf); buf+= sizeof(uint64_t);
+#endif
+    
 /* Compute CRC-32C using the Intel hardware instruction. */
 uint32_t crc32cAdler(uint32_t crc, const void *buf, size_t len)
 {
     const unsigned char *next = (const unsigned char *)buf;
     const unsigned char *end;
+#ifndef __LP64__
+    uint32_t crc0, crc1, crc2;      
+#else
     uint64_t crc0, crc1, crc2;      /* need to be 64 bits for crc32q */
+#endif
     uint32_t crc32bit;
 
     crc32bit = crc;
@@ -250,27 +274,27 @@ uint32_t crc32cAdler(uint32_t crc, const void *buf, size_t len)
 	len -= count;
         count /= 8;                        // count number of crc32di
         unsigned short n = (count + 15) / 16;
-	register uint64_t* next64 = (uint64_t*)next;
+//	register uint64_t* next64 = (uint64_t*)next;
         switch(count % 16) {
-            case 0: do { crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 15: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 14: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 13: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 12: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 11: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 10: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 9: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 8: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 7: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 6: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 5: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 4: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 3: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 2: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
-                case 1: crc0 = __builtin_ia32_crc32di(crc0, *next64++);
+            case 0: do { CRCsinglet(crc0, next);
+                case 15: CRCsinglet(crc0, next);
+                case 14: CRCsinglet(crc0, next);
+                case 13: CRCsinglet(crc0, next);
+                case 12: CRCsinglet(crc0, next);
+                case 11: CRCsinglet(crc0, next);
+                case 10: CRCsinglet(crc0, next);
+                case 9: CRCsinglet(crc0, next);
+                case 8: CRCsinglet(crc0, next);
+                case 7: CRCsinglet(crc0, next);
+                case 6: CRCsinglet(crc0, next);
+                case 5: CRCsinglet(crc0, next);
+                case 4: CRCsinglet(crc0, next);
+                case 3: CRCsinglet(crc0, next);
+                case 2: CRCsinglet(crc0, next);
+                case 1: CRCsinglet(crc0, next);
                 } while (--n > 0);
         }
-        next = (const unsigned char *)next64;
+//        next = (const unsigned char *)next64;
     };
     
     /* compute the crc for up to seven trailing bytes */

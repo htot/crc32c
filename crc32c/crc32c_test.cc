@@ -37,8 +37,8 @@ static const CRC32CFunctionInfo FNINFO[] = {
     MAKE_FN_STRUCT(crc32cHardware32),
 #ifdef __LP64__
     MAKE_FN_STRUCT(crc32cHardware64),
-    MAKE_FN_STRUCT(crc32cAdler),
 #endif
+    MAKE_FN_STRUCT(crc32cAdler),
 };
 #undef MAKE_FN_STRUCT
 

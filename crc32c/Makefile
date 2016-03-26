@@ -1,6 +1,6 @@
 WARNING_FLAGS=-Wall -Wextra -Wno-sign-compare 
-#OPT_FLAGS= -g -O0
-OPT_FLAGS=-O3 -DNDEBUG
+OPT_FLAGS= -g -O0
+#OPT_FLAGS=-O3 -DNDEBUG
 CXXFLAGS=-msse4.2 $(WARNING_FLAGS) $(OPT_FLAGS)
 
 # Makes the linker g++
