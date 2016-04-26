@@ -12,7 +12,7 @@ using namespace logging;
 static const int TRIALS = 5;
 static const int ITERATIONS = 10;
 
-static const int BUFFER_MAX = 16384;
+static const int BUFFER_MAX = 128 * 1024 * 1024;
 static const int ALIGNMENT = 8;
 
 struct CRC32CFunctionInfo {
@@ -28,8 +28,10 @@ static const CRC32CFunctionInfo FNINFO[] = {
     MAKE_FN_STRUCT(crc32cHardware32),
 #ifdef __LP64__
     MAKE_FN_STRUCT(crc32cHardware64),
+    MAKE_FN_STRUCT(crc32cIntelAsm),
 #endif
     MAKE_FN_STRUCT(crc32cAdler),
+    MAKE_FN_STRUCT(crc32cIntelC),
 };
 #undef MAKE_FN_STRUCT
 
@@ -48,7 +50,7 @@ static const size_t NUM_VALID_FUNCTIONS = numValidFunctions();
 
 
 static const int DATA_LENGTHS[] = {
-    16, 64, 256, 1024, 4096, 8192, 16384
+    16, 64, 128, 192, 256, 288, 512, 1024, 1032, 4096, 8192
 };
 
 // FT timing function copies from crc32
@@ -67,7 +69,7 @@ static int cmpDouble(const void *p1, const void *p2) {
 
 
 void runTest(const CRC32CFunctionInfo& fninfo, const char* buffer, int length, bool aligned) {
-    int iterations = 128 * 1024 * 1024 / length;
+    int iterations = BUFFER_MAX / length;
     double startTime, duration;
     double runTimes[TRIALS];
     
@@ -75,13 +77,13 @@ void runTest(const CRC32CFunctionInfo& fninfo, const char* buffer, int length, b
 
     for (int j = 0; j < TRIALS; ++j) {
         uint32_t crc = 0;
-// FT my changes here
+// FT removed the original timer and and retrieves the time
 //        CycleTimer timer;
 //        timer.start();
         startTime = seconds();
 //        for (int i = 0; i < ITERATIONS; ++i) {
         for (int i = 0; i < iterations; ++i) {
-            crc = fninfo.crcfn(crc32cInit(), buffer, length);
+            crc = fninfo.crcfn(crc32cInit(), buffer + length, length);
             crc = crc32cFinish(crc);
         }
 //        timer.end();
@@ -94,7 +96,7 @@ void runTest(const CRC32CFunctionInfo& fninfo, const char* buffer, int length, b
 
     }
     qsort(runTimes, TRIALS, sizeof(double), cmpDouble);
-// calculates the median value when TRIALS is an odd number    
+// FT calculates the median value when TRIALS is an odd number    
     printf("\t%.3f\n", 128.0 / runTimes[(TRIALS + 1) / 2 - 1]);
 }
 

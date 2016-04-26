@@ -12,13 +12,13 @@ using namespace logging;
 
 TEST(CRC32C, CPUDetection) {
     CRC32CFunctionPtr initial = crc32c;
-    uint32_t crc = crc32c(crc32cInit(), NULL, 0);
+    /* uint32_t crc = */ crc32c(crc32cInit(), NULL, 0);
     // These should not be equal!
     CRC32CFunctionPtr final = crc32c;
     EXPECT_NE(initial, final);
 
     // Calling the function again does not change it
-    crc = crc32c(crc32cInit(), NULL, 0);
+    /* crc = */ crc32c(crc32cInit(), NULL, 0);
     EXPECT_EQ(final, crc32c);
 
     EXPECT_EQ(final, detectBestCRC32C());
@@ -37,8 +37,10 @@ static const CRC32CFunctionInfo FNINFO[] = {
     MAKE_FN_STRUCT(crc32cHardware32),
 #ifdef __LP64__
     MAKE_FN_STRUCT(crc32cHardware64),
+    MAKE_FN_STRUCT(crc32cIntelAsm),
 #endif
     MAKE_FN_STRUCT(crc32cAdler),
+    MAKE_FN_STRUCT(crc32cIntelC),
 };
 #undef MAKE_FN_STRUCT
 
@@ -48,7 +50,7 @@ static size_t numValidFunctions() {
     if (!hasHardware) {
         while (FNINFO[numFunctions-1].crcfn == crc32cHardware32 ||
                 FNINFO[numFunctions-1].crcfn == crc32cHardware64 ||
-                FNINFO[numFunctions-1].crcfn == crc32cAdler) {
+                FNINFO[numFunctions-1].crcfn == crc32cIntelC) {
             numFunctions -= 1;
         }
     }
@@ -60,21 +62,58 @@ static bool check(const CRC32CFunctionInfo& fninfo, const void* data, size_t len
     uint32_t crc = fninfo.crcfn(crc32cInit(), data, length);
     crc = crc32cFinish(crc);
     if (crc != value) {
-        printf("Function %s failed; expected: 0x%08x actual: 0x%08x\n", fninfo.name, value, crc);
+        printf("Function %s failed; expected: 0x%08x actual: 0x%08x. ", fninfo.name, value, crc);
+	switch(*(char *)data) {
+	  case '1':
+	    printf("Test: NUMBERS len=%d\n", (int)length);
+	    break;
+	  case '2':
+	    printf("Test: NUMBERS not aligned len=%d\n", (int)length);
+	    break;
+	  case 'T':
+	    printf("Test: PHRASE len=%d\n", (int)length);
+	    break;
+	  case 'L':
+	    printf("Test: LONGPHRASE len=%d\n", (int)length);
+	    break;
+	  default:
+	    printf("Test: VARSIZE len=%d\n", (int)length);
+	};
         return false;
     }
     return true;
 }
 
+#define CHECK_SIZE 10000
+
 TEST(CRC32C, KnownValues) {
     static const char NUMBERS[] = "1234567890";
     static const char PHRASE[] = "The quick brown fox jumps over the lazy dog";
+    static const char LONGPHRASE[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc omni virtuti vitium contrario nomine opponitur. "
+    "Conferam tecum, quam cuique verso rem subicias; Te ipsum, dignissimum maioribus tuis, voluptasne induxit, ut adolescentulus eriperes "
+    "P. Conclusum est enim contra Cyrenaicos satis acute, nihil ad Epicurum. Duo Reges: constructio interrete. Tum Torquatus: Prorsus, inquit, assentior;\n"
+    "Quando enim Socrates, qui parens philosophiae iure dici potest, quicquam tale fecit? Sed quid sentiat, non videtis. Haec quo modo conveniant, non "
+    "sane intellego. Sed ille, ut dixi, vitiose. Dic in quovis conventu te omnia facere, ne doleas. Quod si ita se habeat, non possit beatam praestare "
+    "vitam sapientia. Quis suae urbis conservatorem Codrum, quis Erechthei filias non maxime laudat? Primum divisit ineleganter; Huic mori optimum esse "
+    "propter desperationem sapientiae, illi propter spem vivere.";
+    char VARSIZE[CHECK_SIZE];
+    uint32_t VAR_CRC[CHECK_SIZE];
+    
+    for (int i = 0; i < CHECK_SIZE; i++) {
+      VARSIZE[i] = i;
+      VAR_CRC[i] = crc32cFinish(crc32cSlicingBy8(crc32cInit(), VARSIZE, size_t(i)));
+    };
+
 
     for (int i = 0; i < NUM_VALID_FUNCTIONS; ++i) {
         EXPECT_TRUE(check(FNINFO[i], NUMBERS, 9, 0xE3069283));
         EXPECT_TRUE(check(FNINFO[i], NUMBERS+1, 8, 0xBFE92A83));
         EXPECT_TRUE(check(FNINFO[i], NUMBERS, 10, 0xf3dbd4fe));
         EXPECT_TRUE(check(FNINFO[i], PHRASE, sizeof(PHRASE)-1, 0x22620404));
+	EXPECT_TRUE(check(FNINFO[i], LONGPHRASE, sizeof(LONGPHRASE)-1, 0xfcb7575a));
+	for(int j = 0; j < CHECK_SIZE; j++) {
+	  EXPECT_TRUE(check(FNINFO[i], VARSIZE, j, VAR_CRC[j]));
+	};
     }
 }
 

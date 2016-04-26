@@ -38,6 +38,8 @@ uint32_t crc32cSlicingBy8(uint32_t crc, const void* data, size_t length);
 uint32_t crc32cHardware32(uint32_t crc, const void* data, size_t length);
 uint32_t crc32cHardware64(uint32_t crc, const void* data, size_t length);
 uint32_t crc32cAdler(uint32_t crc, const void* data, size_t length);
+uint32_t crc32cIntelC(uint32_t crc, const void* data, size_t length);
+uint32_t crc32cIntelAsm(uint32_t crc, const void *buf, size_t len);
 
 }  // namespace logging
 #endif
