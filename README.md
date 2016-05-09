@@ -1,6 +1,6 @@
-# Fast Base64 stream encoder/decoder
+# Highly optimized CRC32C lib and benchmark
 
-This project implements various crc32c algorithmes and provides a benchmark routine for them. The main goal is to take the fastest routine and make it available on the Intel Edison platform.
+This project implements various crc32c algorithmes and provides a benchmark routine for them. The main goal is to take the fastest routine and make it available on the Intel Edison platform. It would also be interesting to port to arm (Raspberry Pie) and possibly arm MCU's, but that hasn't been done yet.
 
 As it appears that the fastest algorithm available uses the CRC instruction available on Intel SSE 4.2 processors and where efficient uses 3 ```crc32q``` instructions 3 seperate parts of the buffer which a single core can execute in parallel. This compensates for the latency of a single crc32q instruction. Recombining the 3 CRC-32C bytes is done using the ```pclmulqdq``` instruction, which has overhead of its own, and makes this code path only efficient for buffer sizes above 216 bytes. The algorithem has been taken from Intels ```crc_iscsi_v_pcl.asm``` assembly code (which is available in a modified form in the linux kernel) and using a C wrapper (```crcintelasm.cc```) included into this project.
 
