@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <cpuid.h>
 
 
 #include "logging/crc32ctables.h"
@@ -22,29 +23,15 @@ static uint32_t crc32c_CPUDetection(uint32_t crc, const void* data, size_t lengt
 
 CRC32CFunctionPtr crc32c = crc32c_CPUDetection;
 
-static uint32_t cpuid(uint32_t functionInput) {
-    uint32_t eax;
-    uint32_t ebx;
-    uint32_t ecx;
-    uint32_t edx;
-#ifdef __PIC__
-    // PIC: Need to save and restore ebx See:
-    // http://sam.zoy.org/blog/2007-04-13-shlib-with-non-pic-code-have-inline-assembly-and-pic-mix-well
-    asm("pushl %%ebx\n\t" /* save %ebx */
-            "cpuid\n\t"
-            "movl %%ebx, %[ebx]\n\t" /* save what cpuid just put in %ebx */
-            "popl %%ebx" : "=a"(eax), [ebx] "=r"(ebx), "=c"(ecx), "=d"(edx) : "a" (functionInput)
-            : "cc");
-#else
-    asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (functionInput));
-#endif
-    return ecx;
-}
-
 CRC32CFunctionPtr detectBestCRC32C() {
-    static const int SSE42_BIT = 20;
-    uint32_t ecx = cpuid(1);
-    bool hasSSE42 = ecx & (1 << SSE42_BIT);
+    unsigned int eax, ebx = 0, ecx = 0, edx;
+    unsigned int max_level;
+    
+    max_level = __get_cpuid_max(0, NULL);
+    if (max_level >= 1) {
+        __cpuid(1, eax, ebx, ecx, edx);
+    };
+    bool hasSSE42 = (ecx & bit_SSE4_2);
     if (hasSSE42) {
 #ifdef __LP64__
         return crc32cHardware64;
