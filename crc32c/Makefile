@@ -19,38 +19,33 @@ else
    # do 32 bit stuff here
 endif
 
-ifdef EDISON
-  CC=i586-poky-linux-g++
-else
-  CC=g++
-endif
-
 ifdef DEBUG
   OPT_FLAGS= -g -O0
 else
-  OPT_FLAGS=-Ofast -DNDEBUG -flto
+  OPT_FLAGS=-O3 -DNDEBUG -flto
 endif
 
 WARNING_FLAGS=-Wall -Wextra -Wno-sign-compare 
-CXXFLAGS=-msse4.2 -mpclmul -march=native $(BITS) $(WARNING_FLAGS) $(OPT_FLAGS)
+CXXFLAGS+=-msse4.2 -mpclmul $(BITS) $(WARNING_FLAGS) $(OPT_FLAGS)
+CFLAGS+=-msse4.2 -mpclmul $(BITS) $(WARNING_FLAGS) $(OPT_FLAGS)
 
 BINARIES=crc32c_test crc32cbench
 all: $(BINARIES)
 
 crc32c_test: crc32c_test.o $(OBJECTS)
-	$(CC) -o $@ $^ $(CXXFLAGS)
+	$(CXX) -o $@ $^ $(CXXFLAGS)
 	
 crc32cbench: crc32cbench.o $(OBJECTS)
-	$(CC) -o $@ $^ $(CXXFLAGS)
+	$(CXX) -o $@ $^ $(CXXFLAGS)
 
 clean:
 	$(RM) $(BINARIES) *.o
 
 %.o: %.c
-	$(CC) $(CXXFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 	
 %.o: %.cc
-	$(CC) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 crc_iscsi_v_pcl.o: crc_iscsi_v_pcl.asm
 	yasm -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX -o crc_iscsi_v_pcl.o crc_iscsi_v_pcl.asm
