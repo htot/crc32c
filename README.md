@@ -44,11 +44,6 @@ To enable debug info and disable optimizations type:
 DEBUG=TRUE make all
 ```
 
-And to enable building for the Intel Edison (in the Yocto build envirnment):
-```sh
-EDISON=TRUE make all
-```
-
 ## Tests
 
 `./crc32c_test` performs a series of tests on each algorithm to make sure they have the same results.
@@ -61,12 +56,13 @@ Benchmarks can be run with the built-in benchmark program as follows:
 ./crc32cbench
 ```
 
-Benchmarks have been collected in the provided Libreoffice Calc file. The following graph shows the results for a buffer size of 4096 bytes.
+The following graph shows the results for a buffer size of 4096 bytes.
 ![Benchmarks](crc32c-benchmarks.png)
 
-Note: With Adler and IntelC using 64bits gives a factor 2x improvement. On 64 bits, using SlicingBy8 (the best software based method) is 4.6x better than Sarwate. Using Hardware64 is 5x better that SlicingBy8. IntelC is 2.6x better than Hardware64.
+On i7 with Adler and IntelC using 64bits gives a factor 2x improvement as expected. On 64 bits, using SlicingBy8 (the best software based method) is 5.1x better than Sarwate. Using Hardware64 is 4.2x better that SlicingBy8. IntelC is 2.7x better than Hardware64.
 
-On Edison IntelC is 38x better than SlicingBy8.
+On 32-bit Edison IntelC is 8.8x better than SlicingBy8. 
+On 64-bit Edison all optimized methods (Hardware64, Adler, Intel) are regressing and slower than Hardware64. The fastest method is slower than the fastest on 32-bits.
 
 ## License
 
