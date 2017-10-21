@@ -182,5 +182,6 @@ TEST(CRC32C, Alignment) {
 }
 
 int main() {
+    printf("Testing CRC32C functions\n");
     return TestSuite::globalInstance()->runAll();
 }
