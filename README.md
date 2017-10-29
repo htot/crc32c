@@ -62,7 +62,8 @@ The following graph shows the results for a buffer size of 4096 bytes.
 On i7 with Adler and IntelC using 64bits gives a factor 2x improvement as expected. On 64 bits, using SlicingBy8 (the best software based method) is 5.1x better than Sarwate. Using Hardware64 is 4.2x better that SlicingBy8. IntelC is 2.7x better than Hardware64.
 
 On 32-bit Edison IntelC is 8.8x better than SlicingBy8. 
-On 64-bit Edison all optimized methods (Hardware64, Adler, Intel) are regressing and slower than Hardware64. The fastest method is slower than the fastest on 32-bits.
+
+On 64-bit Edison and NUC E3815 all optimized methods (Hardware64, Adler, Intel) are regressing and slower than Hardware64. The fastest 64-bit method on Edison (Hardware64) is slower than the fastest on 32-bits (IntelC).
 
 ## License
 
